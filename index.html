@@ -3,170 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XKING BENTO CORE - CLOUD</title>
+    <title>XKING NEXUS - CLOUD SYNC</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
         
         :root {
-            --bg: #050505; --surface: #121212; --surface-light: #1e1e1e;
-            --text: #f3f4f6; --text-dim: #9ca3af; 
-            --accent: #10b981; 
-            --accent-glow: rgba(16, 185, 129, 0.2);
-            --danger: #ef4444; --radius: 28px;
+            --bg-color: #05070a; --glass-bg: rgba(20, 24, 32, 0.4); --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff; --text-dim: #7a8494;
+            --accent-glow: #00e5ff; --accent-glow-rgba: rgba(0, 229, 255, 0.2);
+            --danger: #ff2a5f; --danger-rgba: rgba(255, 42, 95, 0.15);
+            --radius: 24px;
         }
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
-        .bento-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 480px;
-            grid-auto-rows: minmax(100px, auto);
+        body { 
+            font-family: 'Outfit', sans-serif; background-color: var(--bg-color); 
+            background-image: radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.05), transparent 25%), radial-gradient(circle at 85% 30%, rgba(112, 0, 255, 0.05), transparent 25%);
+            color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden;
         }
-
-        .box { background: var(--surface); border-radius: var(--radius); padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: 0.4s; }
         
-        .header-box { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--surface), #0a0a0a); }
-        .time-display { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
-        .date-display { color: var(--text-dim); font-size: 14px; font-weight: 500; }
+        .dashboard { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 
-        .device { cursor: pointer; }
-        .device.active { background: var(--accent-glow); border-color: var(--accent); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1); }
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .icon { width: 46px; height: 46px; background: var(--surface-light); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); transition: 0.3s; }
-        .device.active .icon { background: var(--accent); color: #000; }
-        .icon svg { width: 24px; height: 24px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; margin-bottom: 8px; }
+        .brand { font-weight: 800; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+        .status-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--glass-border); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-glow); box-shadow: 0 0 10px var(--accent-glow); animation: pulse 2s infinite; }
 
-        .info h3 { margin: 0; font-size: 18px; font-weight: 500; }
-        .info p { margin: 4px 0 0; font-size: 13px; color: var(--text-dim); }
-        .device.active .info p { color: var(--accent); font-weight: 700; }
+        .glass-box { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; }
+        .hero { display: flex; justify-content: space-between; align-items: flex-end; padding: 24px; }
+        .hero::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-glow), transparent); opacity: 0.5; }
+        .time { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+        .date { font-size: 14px; font-weight: 400; color: var(--text-dim); margin-top: 4px; }
+        .power-box { text-align: right; }
+        .power-val { font-size: 24px; font-weight: 800; color: var(--accent-glow); }
+        .power-lbl { font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; letter-spacing: 1px;}
 
-        .toggle { width: 48px; height: 26px; background: #333; border-radius: 30px; position: relative; transition: 0.3s; border: 2px solid transparent; }
-        .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .device.active .toggle { background: var(--accent); }
-        .device.active .toggle::after { transform: translateX(22px); }
-
-        .master-box { grid-column: span 2; display: flex; gap: 12px; background: transparent; border: none; padding: 0; }
-        .btn-master { flex: 1; padding: 16px; border-radius: 20px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; }
-        .btn-off { background: #2a0808; color: var(--danger); }
-        .btn-on { background: var(--accent-glow); color: var(--accent); }
-        .btn-master:active { transform: scale(0.97); filter: brightness(1.2); }
+        .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .device { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: space-between; }
+        .device.active { background: var(--accent-glow-rgba); border-color: rgba(0, 229, 255, 0.4); box-shadow: 0 10px 40px rgba(0, 229, 255, 0.1); }
         
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; color: var(--accent); font-size: 18px; font-weight: 500; transition: 0.5s opacity; text-align: center; padding: 20px; }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; cursor: pointer; }
+        .card-top:active { transform: scale(0.95); }
+        
+        .icon { width: 42px; height: 42px; background: rgba(0,0,0,0.5); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); transition: 0.4s; border: 1px solid var(--glass-border);}
+        .device.active .icon { background: var(--accent-glow); color: #000; border-color: transparent; box-shadow: 0 0 15px var(--accent-glow);}
+        .icon svg { width: 20px; height: 20px; }
+
+        .info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; cursor: pointer; }
+        .info p { font-size: 12px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; display: flex; align-items: center; gap: 6px;}
+        .state-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: 0.3s; }
+        .device.active .state-dot { background: var(--accent-glow); box-shadow: 0 0 8px var(--accent-glow); }
+        .device.active .info p { color: var(--accent-glow); text-shadow: 0 0 8px rgba(0, 229, 255, 0.3); }
+
+        .timer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--glass-border); }
+        .timer-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-family: inherit; }
+        .timer-btn:active { transform: scale(0.9); }
+        .timer-btn.cancel-btn { color: var(--danger); border-color: rgba(255,42,95,0.3); background: var(--danger-rgba); }
+        .countdown { font-size: 11px; color: var(--accent-glow); font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+
+        .master-box { grid-column: span 2; display: flex; gap: 12px; background: transparent; border: none; padding: 0; backdrop-filter: none;}
+        .btn-master { flex: 1; padding: 18px; border-radius: 20px; border: 1px solid var(--glass-border); font-size: 14px; font-weight: 800; letter-spacing: 1px; cursor: pointer; transition: 0.2s; font-family: inherit; text-transform: uppercase; }
+        .btn-off { background: rgba(255, 42, 95, 0.05); color: var(--danger); border-color: rgba(255, 42, 95, 0.2); }
+        .btn-on { background: rgba(0, 229, 255, 0.05); color: var(--accent-glow); border-color: rgba(0, 229, 255, 0.2); }
+        .btn-master:active { transform: scale(0.96); filter: brightness(1.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 20px; opacity: 0; transition: opacity 0.3s; }
+        .modal { background: var(--bg-color); border: 1px solid var(--glass-border); padding: 24px; border-radius: var(--radius); width: 100%; max-width: 340px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: translateY(20px); transition: 0.3s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal h3 { margin-bottom: 20px; font-size: 18px; font-weight: 600; text-align: center; }
+        .m-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .m-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); font-weight: 800; font-family: inherit; cursor: pointer; background: rgba(255,255,255,0.05); color: var(--text-dim); transition: 0.2s; }
+        .m-btn.sel-on { background: var(--accent-glow-rgba); border-color: var(--accent-glow); color: var(--accent-glow); }
+        .m-btn.sel-off { background: var(--danger-rgba); border-color: var(--danger); color: var(--danger); }
+        .modal input { width: 100%; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--glass-border); margin-bottom: 20px; font-family: inherit; font-size: 16px; text-align: center; }
+        .modal input:focus { outline: none; border-color: var(--accent-glow); }
+
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; transition: 0.8s opacity; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-glow); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .load-text { color: var(--text-dim); font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+
+        @keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 229, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="loading-overlay" id="loader">Connecting to Supabase...</div>
+<div class="loading-overlay" id="loader">
+    <div class="spinner"></div>
+    <div class="load-text" id="loader-msg">Booting Nexus Core...</div>
+</div>
 
-<div class="bento-grid" id="grid">
-    <div class="box header-box">
-        <div><div class="time-display" id="clock">00:00</div><div class="date-display" id="date">Loading...</div></div>
-        <div><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+<div class="dashboard" id="dashboard" style="visibility: hidden;">
+    
+    <div class="top-nav">
+        <div class="brand">NEXUS_OS</div>
+        <div class="status-pill"><div class="status-dot"></div> Cloud Linked</div>
+    </div>
+
+    <div class="glass-box hero">
+        <div>
+            <div class="time" id="clock">00:00</div>
+            <div class="date" id="date">Loading...</div>
+        </div>
+        <div class="power-box">
+            <div class="power-val" id="power-display">0W</div>
+            <div class="power-lbl">Est. Power</div>
+        </div>
     </div>
     
-    <div class="box master-box">
-        <button class="btn-master btn-off" onclick="master(false)">SYSTEM OFF</button>
-        <button class="btn-master btn-on" onclick="master(true)">SYSTEM ON</button>
+    <div class="bento-grid" id="grid"></div>
+
+    <div class="master-box">
+        <button class="btn-master btn-off" onclick="master(false)">System Halt</button>
+        <button class="btn-master btn-on" onclick="master(true)">System Ignite</button>
+    </div>
+</div>
+
+<div id="tModal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="mTitle">Schedule Device</h3>
+        <div class="m-row">
+            <button id="bOn" class="m-btn" onclick="setTimerAction(true)">TURN ON</button>
+            <button id="bOff" class="m-btn" onclick="setTimerAction(false)">TURN OFF</button>
+        </div>
+        <input type="number" id="tMins" placeholder="Minutes (e.g., 30)">
+        <div class="m-row" style="margin-bottom: 0;">
+            <button class="m-btn" style="color:var(--text-main);" onclick="closeModal()">CANCEL</button>
+            <button class="m-btn" style="background:var(--accent-glow); color:#000; border-color:var(--accent-glow);" onclick="startTimer()">START</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // ==========================================
-    // 1. SUPABASE CONFIGURATION
-    // ==========================================
     const SUPABASE_URL = 'https://vdxgbbialqmehxkgggsf.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeGdiYmlhbHFtZWh4a2dnZ3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Mzc3NDIsImV4cCI6MjA4OTUxMzc0Mn0.MKflrwAvwNQO8HQTNiTLVoBamhRCUSJLhgfQHxXYM38';
-    
-    // We named this 'db' instead of 'supabase' to prevent naming conflicts
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ==========================================
-    // UI SETUP
-    // ==========================================
     const icons = [
-        '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', 
-        '<path d="M9 18h6M10 22h4M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>', 
-        '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M12 20v-2"/>', 
-        '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' 
+        '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        '<path d="M9 18h6M10 22h4M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>',
+        '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M12 20v-2"/>',
+        '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'
     ];
-
+    const names = ["Fan", "Lights", "Socket", "System"];
+    const wattages = [65, 15, 1200, 250];
+    
     let currentStates = [false, false, false, false];
+    let activeTimers = [null, null, null, null]; 
+
+    function haptic() { if (navigator.vibrate) navigator.vibrate(40); }
 
     function initGrid() {
         const grid = document.getElementById('grid');
-        const masterBox = document.querySelector('.master-box');
-        
         for(let i=0; i<4; i++) {
             const card = document.createElement('div');
-            card.className = `box device`;
+            card.className = `glass-box device`;
             card.id = `card${i}`;
-            card.onclick = () => toggleDev(i);
+            card.style.animation = `fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.1}s both`; 
             card.innerHTML = `
-                <div class="card-top">
+                <div class="card-top" onclick="toggleDev(${i})">
                     <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[i]}</svg></div>
-                    <div class="toggle"></div>
                 </div>
-                <div class="info"><h3 id="name${i}">Device ${i}</h3><p id="status${i}">OFF</p></div>
+                <div class="info" onclick="toggleDev(${i})">
+                    <h3 id="name${i}">${names[i]}</h3>
+                    <p><span class="state-dot"></span><span id="status${i}">OFF</span></p>
+                </div>
+                <div class="timer-row">
+                    <button class="timer-btn" id="tbtn${i}" onclick="openModal(${i})">SET TIMER</button>
+                    <div class="countdown" id="time${i}"></div>
+                </div>
             `;
-            grid.insertBefore(card, masterBox);
+            grid.appendChild(card);
         }
     }
 
+    function calculatePower() {
+        let totalWatts = 0;
+        for(let i=0; i<4; i++) { if(currentStates[i]) totalWatts += wattages[i]; }
+        document.getElementById('power-display').innerText = totalWatts + 'W';
+    }
+
     // ==========================================
-    // DATABASE LOGIC
+    // CLOUD SYNC LOGIC
     // ==========================================
     async function fetchInitialStates() {
         try {
-            // Fetch data using our 'db' object
+            document.getElementById('loader-msg').innerText = "Authenticating...";
             const { data, error } = await db.from('relay_states').select('*').order('id');
+            if (error) throw error;
+            if (!data || data.length === 0) throw new Error("No devices found in DB");
             
-            if (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById('loader').innerText = "Database Error: " + error.message + " \n\n(Did you disable RLS in Supabase?)";
-                document.getElementById('loader').style.color = "var(--danger)";
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                document.getElementById('loader').innerText = "Database empty! Did you run the SQL query to create the table and devices?";
-                document.getElementById('loader').style.color = "var(--danger)";
-                return;
-            }
-            
-            // Populate UI with database values
+            const now = Date.now();
             data.forEach(relay => {
                 currentStates[relay.id] = relay.is_on;
                 document.getElementById(`name${relay.id}`).innerText = relay.device_name;
                 updateUI(relay.id, relay.is_on);
+                
+                // Load timers from cloud if they haven't expired
+                if (relay.timer_end && relay.timer_end > now) {
+                    activeTimers[relay.id] = { endTime: relay.timer_end, targetState: relay.timer_target };
+                } else {
+                    activeTimers[relay.id] = null;
+                }
+                updateTimerUI(relay.id);
             });
 
-            // Success: Hide the loading screen
+            calculatePower();
             document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            setTimeout(() => {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('dashboard').style.visibility = 'visible';
+            }, 800);
             
         } catch (err) {
-            document.getElementById('loader').innerText = "Network Error: Could not reach Supabase.";
-            document.getElementById('loader').style.color = "var(--danger)";
-            console.error(err);
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('loader-msg').innerText = "Connection Failed: " + err.message;
+            document.getElementById('loader-msg').style.color = "var(--danger)";
         }
+    }
+
+    async function setDeviceState(id, turnOn) {
+        currentStates[id] = turnOn;
+        updateUI(id, turnOn);
+        calculatePower();
+        await db.from('relay_states').update({ is_on: turnOn }).eq('id', id);
     }
 
     async function toggleDev(id) {
-        const newState = !currentStates[id];
-        currentStates[id] = newState; // Optimistic UI update
-        updateUI(id, newState);
-
-        await db.from('relay_states').update({ is_on: newState }).eq('id', id);
+        haptic();
+        await setDeviceState(id, !currentStates[id]);
+        cancelTimer(id); // Manually toggling cancels any running timer
     }
 
     async function master(turnOn) {
+        haptic();
         for(let i=0; i<4; i++) {
             currentStates[i] = turnOn;
             updateUI(i, turnOn);
+            cancelTimer(i);
         }
+        calculatePower();
         await db.from('relay_states').update({ is_on: turnOn }).in('id', [0,1,2,3]);
     }
 
@@ -174,34 +256,125 @@
         const card = document.getElementById(`card${id}`);
         const status = document.getElementById(`status${id}`);
         if(isOn) {
-            card.classList.add('active');
-            status.innerText = 'ONLINE';
+            card.classList.add('active'); status.innerText = 'ON';
         } else {
-            card.classList.remove('active');
-            status.innerText = 'OFF';
+            card.classList.remove('active'); status.innerText = 'OFF';
         }
     }
 
-    // Subscribe to realtime database changes (if you open it on multiple phones)
+    // Listen for Realtime changes from other devices
     db.channel('custom-all-channel')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'relay_states' }, (payload) => {
           const id = payload.new.id;
-          const isOn = payload.new.is_on;
-          currentStates[id] = isOn;
-          updateUI(id, isOn);
-      })
-      .subscribe();
+          
+          // Sync ON/OFF state
+          currentStates[id] = payload.new.is_on;
+          updateUI(id, payload.new.is_on);
+          calculatePower();
+          
+          // Sync Timer State
+          const now = Date.now();
+          if (payload.new.timer_end && payload.new.timer_end > now) {
+              activeTimers[id] = { endTime: payload.new.timer_end, targetState: payload.new.timer_target };
+          } else {
+              activeTimers[id] = null;
+          }
+          updateTimerUI(id);
+      }).subscribe();
 
     // ==========================================
-    // CLOCK
+    // TIMER UI LOGIC
     // ==========================================
+    let timerTargetId = 0;
+    let timerTargetState = false;
+
+    function openModal(id) {
+        haptic();
+        timerTargetId = id;
+        document.getElementById('mTitle').innerText = `Schedule ${names[id]}`;
+        setTimerAction(false);
+        document.getElementById('tMins').value = '';
+        document.getElementById('tModal').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('tModal').classList.remove('active'); }
+
+    function setTimerAction(isOn) {
+        timerTargetState = isOn;
+        document.getElementById('bOn').className = isOn ? 'm-btn sel-on' : 'm-btn';
+        document.getElementById('bOff').className = !isOn ? 'm-btn sel-off' : 'm-btn';
+    }
+
+    async function startTimer() {
+        haptic();
+        let mins = document.getElementById('tMins').value;
+        if(mins > 0) {
+            const futureTime = Date.now() + (mins * 60000);
+            // Optimistic UI update
+            activeTimers[timerTargetId] = { endTime: futureTime, targetState: timerTargetState };
+            updateTimerUI(timerTargetId);
+            
+            // Push timer to cloud
+            await db.from('relay_states').update({ 
+                timer_end: futureTime, 
+                timer_target: timerTargetState 
+            }).eq('id', timerTargetId);
+        }
+        closeModal();
+    }
+
+    async function cancelTimer(id) {
+        activeTimers[id] = null;
+        updateTimerUI(id);
+        // Clear timer in cloud
+        await db.from('relay_states').update({ timer_end: 0 }).eq('id', id);
+    }
+
+    function updateTimerUI(id) {
+        const tbtn = document.getElementById(`tbtn${id}`);
+        const tDisp = document.getElementById(`time${id}`);
+        
+        if(activeTimers[id]) {
+            tbtn.innerText = 'CANCEL';
+            tbtn.className = 'timer-btn cancel-btn';
+            tbtn.onclick = () => { haptic(); cancelTimer(id); };
+        } else {
+            tbtn.innerText = 'SET TIMER';
+            tbtn.className = 'timer-btn';
+            tbtn.onclick = () => openModal(id);
+            tDisp.innerText = '';
+        }
+    }
+
+    // CLOCK & TIMER COUNTDOWN LOOP
     setInterval(() => {
+        const now = Date.now();
         const d = new Date();
         document.getElementById('clock').innerText = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        document.getElementById('date').innerText = d.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'});
+        document.getElementById('date').innerText = d.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'}).toUpperCase();
+
+        for(let i=0; i<4; i++) {
+            if(activeTimers[i]) {
+                let timeLeft = activeTimers[i].endTime - now;
+                if(timeLeft <= 0) {
+                    // Trigger Action!
+                    setDeviceState(i, activeTimers[i].targetState);
+                    
+                    // Clear timer in DB
+                    db.from('relay_states').update({ timer_end: 0 }).eq('id', i);
+                    activeTimers[i] = null;
+                    updateTimerUI(i);
+                } else {
+                    // Update countdown text
+                    let m = Math.floor(timeLeft / 60000);
+                    let s = Math.floor((timeLeft % 60000) / 1000);
+                    let actionText = activeTimers[i].targetState ? "ON IN " : "OFF IN ";
+                    document.getElementById(`time${i}`).innerText = actionText + m + "M " + (s<10?"0":"") + s + "S";
+                }
+            }
+        }
     }, 1000);
 
-    // Run startup functions
     initGrid();
     fetchInitialStates();
 </script>
