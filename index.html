@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>XKING BENTO CORE - CLOUD</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap');
         
@@ -52,7 +54,7 @@
         .btn-on { background: var(--accent-glow); color: var(--accent); }
         .btn-master:active { transform: scale(0.97); filter: brightness(1.2); }
         
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; color: var(--accent); font-size: 20px; transition: 0.5s opacity; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; color: var(--accent); font-size: 18px; font-weight: 500; transition: 0.5s opacity; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
@@ -73,11 +75,13 @@
 
 <script>
     // ==========================================
-// 1. ADD YOUR SUPABASE DETAILS HERE
-// ==========================================
-const SUPABASE_URL = 'https://vdxgbbialqmehxkgggsf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeGdiYmlhbHFtZWh4a2dnZ3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Mzc3NDIsImV4cCI6MjA4OTUxMzc0Mn0.MKflrwAvwNQO8HQTNiTLVoBamhRCUSJLhgfQHxXYM38';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 1. SUPABASE CONFIGURATION
+    // ==========================================
+    const SUPABASE_URL = 'https://vdxgbbialqmehxkgggsf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeGdiYmlhbHFtZWh4a2dnZ3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Mzc3NDIsImV4cCI6MjA4OTUxMzc0Mn0.MKflrwAvwNQO8HQTNiTLVoBamhRCUSJLhgfQHxXYM38';
+    
+    // We named this 'db' instead of 'supabase' to prevent naming conflicts
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ==========================================
     // UI SETUP
@@ -115,21 +119,39 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     // DATABASE LOGIC
     // ==========================================
     async function fetchInitialStates() {
-        const { data, error } = await supabase.from('relay_states').select('*').order('id');
-        if (error) {
-            console.error("Error fetching data:", error);
-            return;
-        }
-        
-        data.forEach(relay => {
-            currentStates[relay.id] = relay.is_on;
-            document.getElementById(`name${relay.id}`).innerText = relay.device_name;
-            updateUI(relay.id, relay.is_on);
-        });
+        try {
+            // Fetch data using our 'db' object
+            const { data, error } = await db.from('relay_states').select('*').order('id');
+            
+            if (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('loader').innerText = "Database Error: " + error.message + " \n\n(Did you disable RLS in Supabase?)";
+                document.getElementById('loader').style.color = "var(--danger)";
+                return;
+            }
 
-        // Hide loader once connected
-        document.getElementById('loader').style.opacity = '0';
-        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            if (!data || data.length === 0) {
+                document.getElementById('loader').innerText = "Database empty! Did you run the SQL query to create the table and devices?";
+                document.getElementById('loader').style.color = "var(--danger)";
+                return;
+            }
+            
+            // Populate UI with database values
+            data.forEach(relay => {
+                currentStates[relay.id] = relay.is_on;
+                document.getElementById(`name${relay.id}`).innerText = relay.device_name;
+                updateUI(relay.id, relay.is_on);
+            });
+
+            // Success: Hide the loading screen
+            document.getElementById('loader').style.opacity = '0';
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            
+        } catch (err) {
+            document.getElementById('loader').innerText = "Network Error: Could not reach Supabase.";
+            document.getElementById('loader').style.color = "var(--danger)";
+            console.error(err);
+        }
     }
 
     async function toggleDev(id) {
@@ -137,7 +159,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         currentStates[id] = newState; // Optimistic UI update
         updateUI(id, newState);
 
-        await supabase.from('relay_states').update({ is_on: newState }).eq('id', id);
+        await db.from('relay_states').update({ is_on: newState }).eq('id', id);
     }
 
     async function master(turnOn) {
@@ -145,7 +167,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             currentStates[i] = turnOn;
             updateUI(i, turnOn);
         }
-        await supabase.from('relay_states').update({ is_on: turnOn }).in('id', [0,1,2,3]);
+        await db.from('relay_states').update({ is_on: turnOn }).in('id', [0,1,2,3]);
     }
 
     function updateUI(id, isOn) {
@@ -160,8 +182,8 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
     }
 
-    // Subscribe to realtime database changes (in case another browser changes it)
-    supabase.channel('custom-all-channel')
+    // Subscribe to realtime database changes (if you open it on multiple phones)
+    db.channel('custom-all-channel')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'relay_states' }, (payload) => {
           const id = payload.new.id;
           const isOn = payload.new.is_on;
@@ -179,7 +201,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         document.getElementById('date').innerText = d.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'});
     }, 1000);
 
-    // Boot
+    // Run startup functions
     initGrid();
     fetchInitialStates();
 </script>
